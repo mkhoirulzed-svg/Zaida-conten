@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10101a">
+  <meta name="description" content="ZAIDA Content — studio konten otomatis.">
+  <title>ZAIDA Content</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="ZAIDA Content">
+        <span class="brand-mark">Z</span>
+        <span>ZAIDA <b>Content</b></span>
+      </a>
+      <span class="beta">BETA</span>
+      <button class="avatar" aria-label="Profil">Z</button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow"><span class="pulse"></span> CREATIVE STUDIO</div>
+        <h1>Ide jadi <span>konten.</span></h1>
+        <p>Buat video faceless dengan lebih mudah.</p>
+      </section>
+
+      <section class="create-panel">
+        <div class="section-title"><span class="step">01</span><div><h2>Mulai dari ide</h2><p>Apa yang ingin kamu buat hari ini?</p></div></div>
+        <label class="sr-only" for="topic">Ide konten</label>
+        <textarea id="topic" rows="3" maxlength="500" placeholder="Contoh: 5 fakta menarik tentang kesehatan jantung..."></textarea>
+        <div class="format-row">
+          <span class="field-caption">FORMAT VIDEO</span>
+          <div class="format-options" role="group" aria-label="Format video">
+            <button class="format-option selected" data-format="9:16"><span class="format-icon vertical"></span><span>Portrait</span><small>9:16</small></button>
+            <button class="format-option" data-format="16:9"><span class="format-icon horizontal"></span><span>Landscape</span><small>16:9</small></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="style-section">
+        <div class="section-title"><span class="step">02</span><div><h2>Pilih gaya visual</h2><p>Satu gaya untuk seluruh adegan.</p></div></div>
+        <div class="filters" id="filters" role="group" aria-label="Kategori gaya visual">
+          <button class="filter active" data-filter="Semua">Semua <span>24</span></button>
+          <button class="filter" data-filter="2D">2D</button>
+          <button class="filter" data-filter="3D">3D</button>
+          <button class="filter" data-filter="Sinematik">Sinematik</button>
+          <button class="filter" data-filter="Artistik">Artistik</button>
+        </div>
+        <div class="style-grid" id="styleGrid" aria-live="polite"></div>
+        <div class="selected-note" id="selectedNote">Pilih satu gaya visual untuk melanjutkan.</div>
+      </section>
+
+      <div class="bottom-action">
+        <button id="startButton" class="primary-button" disabled>Mulai proyek <span>→</span></button>
+        <p>Pengaturan lainnya bisa dilakukan nanti.</p>
+      </div>
+      <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+    </main>
+    <footer>ZAIDA Content <span>•</span> Dibuat untuk berkarya</footer>
+  </div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
