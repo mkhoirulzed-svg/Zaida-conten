@@ -15,6 +15,7 @@ Private Node.js service that runs a bounded browser smoke test through Browserle
 
 - `GET /health`: basic service health; does not reveal credentials.
 - `POST /api/browser/smoke-test`: requires `Authorization: Bearer <ZAIDA_WORKER_SECRET>`. Opens `https://example.com` in a remote browser, reads the page title and heading, and closes the session.
+- `GET /api/footage/search?q=heart&orientation=portrait`: searches Pexels videos using the server-side `PEXELS_API_KEY`. Supports `portrait`, `landscape`, and `square`; returns up to 12 video choices with preview thumbnails, direct MP4 file links, and contributor attribution.
 
 Example:
 
@@ -23,9 +24,15 @@ curl -X POST http://localhost:8787/api/browser/smoke-test \
   -H "Authorization: Bearer YOUR_ZAIDA_WORKER_SECRET"
 ```
 
+## Connect the GitHub Pages frontend
+
+After deploying this service on a public HTTPS host, copy its base URL into the `zaida-api-base` meta tag in the root `index.html` (without a trailing slash). For example, if the worker is deployed at `https://zaida-content-api.example.com`, set the meta tag content to that origin. Add the exact GitHub Pages/custom-domain origin to `ALLOWED_ORIGINS` in the worker hosting environment, then redeploy both services. Never put `PEXELS_API_KEY` in the frontend.
+
+The footage endpoint has a simple per-IP in-memory limit of 20 searches per minute and requests at most 12 results. Pexels default account limits are separate and still apply.
+
 ## Security notes
 
-- Never commit `.env`, Browserless tokens, or the worker secret.
+- Never commit `.env`, Browserless tokens, the Pexels API key, or the worker secret.
 - Never call the worker directly from public frontend code. A future authenticated ZAIDA backend should call it server-to-server.
 - The smoke test only visits the fixed `example.com` URL; it does not accept arbitrary URLs or user-supplied scripts.
 - Keep browser sessions short and always close them to avoid unnecessary usage.
