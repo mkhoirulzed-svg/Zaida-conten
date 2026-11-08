@@ -191,7 +191,7 @@ function renderScenes() {
     const resultGrid = document.createElement("div"); resultGrid.className = "footage-results";
     autoSearch.addEventListener("click", () => searchFootage(scene, project, searchQuery, autoSearch, searchStatus, resultGrid));
     const providerRow = document.createElement("div"); providerRow.className = "footage-providers";
-    [["Pixabay","https://pixabay.com/videos/search/"],["Pixabay","https://pixabay.com/videos/search/"]].forEach(([label, base]) => {
+    [["Pixabay","https://pixabay.com/videos/search/"]].forEach(([label, base]) => {
       const link = document.createElement("a"); link.className = "footage-provider";
       link.href = base + encodeURIComponent(searchQuery || "cinematic background");
       link.target = "_blank"; link.rel = "noopener noreferrer"; link.textContent = "Cari di " + label;
@@ -252,7 +252,7 @@ async function searchFootage(scene, project, query, button, status, results) {
       status.textContent = "Belum ada video yang cocok. Coba kata kunci lain.";
       return;
     }
-    status.textContent = payload.videos.length + " pilihan video ditemukan · Pexels";
+    status.textContent = payload.videos.length + " pilihan video ditemukan · Pixabay";
     payload.videos.forEach(video => {
       const item = document.createElement("article"); item.className = "footage-result";
       const thumb = document.createElement("img"); thumb.src = video.thumbnail; thumb.alt = "Preview footage dari Pixabay"; thumb.loading = "lazy";
