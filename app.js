@@ -14,6 +14,8 @@ const styles = [
 ];
 const STORAGE_KEY = "zaida-content-projects-v2";
 const $ = selector => document.querySelector(selector);
+const FOOTAGE_API_BASE_URL = (document.querySelector('meta[name="zaida-api-base"]')?.content || window.ZAIDA_API_BASE_URL || "").trim().replace(/\/$/, "");
+
 const grid = $("#styleGrid"), topic = $("#topic"), startButton = $("#startButton"), notice = $("#notice");
 let selectedStyle = "", format = "9:16", activeFilter = "Semua", currentProjectId = null;
 let projects = loadProjects();
@@ -181,6 +183,13 @@ function renderScenes() {
     const keywords = document.createElement("div"); keywords.className = "scene-keywords"; keywords.textContent = scene.keywords || scene.title || "Tambahkan kata kunci";
     const footagePanel = document.createElement("div"); footagePanel.className = "footage-panel";
     const searchQuery = [scene.keywords, scene.title].filter(Boolean).join(" ").trim();
+    const autoSearch = document.createElement("button");
+    autoSearch.type = "button"; autoSearch.className = "small-primary footage-auto-search";
+    autoSearch.textContent = "✦ Cari footage otomatis";
+    const searchStatus = document.createElement("p"); searchStatus.className = "footage-search-status";
+    searchStatus.setAttribute("aria-live", "polite");
+    const resultGrid = document.createElement("div"); resultGrid.className = "footage-results";
+    autoSearch.addEventListener("click", () => searchFootage(scene, project, searchQuery, autoSearch, searchStatus, resultGrid));
     const providerRow = document.createElement("div"); providerRow.className = "footage-providers";
     [["Pexels","https://www.pexels.com/search/videos/"],["Pixabay","https://pixabay.com/videos/search/"]].forEach(([label, base]) => {
       const link = document.createElement("a"); link.className = "footage-provider";
@@ -212,7 +221,7 @@ function renderScenes() {
         showNotice("URL footage belum valid. Periksa kembali tautannya.");
       }
     });
-    footagePanel.append(providerRow, urlLabel, saveFootage);
+    footagePanel.append(autoSearch, searchStatus, resultGrid, providerRow, urlLabel, saveFootage);
     const actions = document.createElement("div"); actions.className = "scene-actions";
     const edit = document.createElement("button"); edit.type = "button"; edit.className = "ghost-button"; edit.textContent = "Edit adegan";
     edit.addEventListener("click", () => editScene(scene.id));
@@ -220,6 +229,55 @@ function renderScenes() {
     remove.addEventListener("click", () => { project.scenes = project.scenes.filter(item => item.id !== scene.id); persistProjects(); renderScenes(); renderProjects(); });
     actions.append(edit, remove); card.append(head, body, visual, keywordLabel, keywords, footagePanel, actions); list.append(card);
   });
+}
+async function searchFootage(scene, project, query, button, status, results) {
+  if (!FOOTAGE_API_BASE_URL) {
+    showNotice("API footage belum dihubungkan. Backend perlu di-deploy dan alamat API diatur terlebih dahulu.");
+    status.textContent = "API belum dikonfigurasi.";
+    return;
+  }
+  button.disabled = true; button.textContent = "Mencari...";
+  status.textContent = "Mengambil pilihan video dari Pexels...";
+  results.innerHTML = "";
+  try {
+    const orientation = project.format === "16:9" ? "landscape" : "portrait";
+    const params = new URLSearchParams({ q: query || scene.title || "cinematic background", orientation });
+    const response = await fetch(FOOTAGE_API_BASE_URL + "/api/footage/search?" + params.toString(), {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(20000)
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.error || "Pencarian tidak berhasil.");
+    if (!payload.videos?.length) {
+      status.textContent = "Belum ada video yang cocok. Coba kata kunci lain.";
+      return;
+    }
+    status.textContent = payload.videos.length + " pilihan video ditemukan · Pexels";
+    payload.videos.forEach(video => {
+      const item = document.createElement("article"); item.className = "footage-result";
+      const thumb = document.createElement("img"); thumb.src = video.thumbnail; thumb.alt = "Preview footage dari Pexels"; thumb.loading = "lazy";
+      const meta = document.createElement("div"); meta.className = "footage-result-meta";
+      const detail = document.createElement("span");
+      detail.textContent = (video.width && video.height ? video.width + "×" + video.height + " · " : "") + (video.duration || 0) + " dtk";
+      const credit = document.createElement("a"); credit.href = video.pageUrl; credit.target = "_blank"; credit.rel = "noopener noreferrer";
+      credit.textContent = "Video oleh " + video.creator + " · Pexels";
+      const choose = document.createElement("button"); choose.type = "button"; choose.className = "footage-choose"; choose.textContent = "Pilih video";
+      choose.disabled = !video.fileUrl;
+      choose.addEventListener("click", () => {
+        scene.footageUrl = video.fileUrl;
+        scene.footageSource = "Pexels";
+        scene.footagePageUrl = video.pageUrl;
+        scene.footageCreator = video.creator;
+        persistProjects(); renderScenes(); renderProjects();
+        showNotice("Footage Pexels berhasil dipilih untuk adegan ini.");
+      });
+      meta.append(detail, credit, choose); item.append(thumb, meta); results.append(item);
+    });
+  } catch (error) {
+    status.textContent = error.message || "Pencarian gagal.";
+  } finally {
+    button.disabled = false; button.textContent = "✦ Cari footage otomatis";
+  }
 }
 function editScene(id) {
   const project = currentProject(), scene = project.scenes.find(item => item.id === id); if (!scene) return;
