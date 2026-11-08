@@ -22,6 +22,104 @@ function isAuthorized(request) {
     timingSafeEqual(suppliedBuffer, expectedBuffer);
 }
 
+
+const pexelsApiKey = process.env.PEXELS_API_KEY;
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5500,http://127.0.0.1:5500")
+  .split(",").map(origin => origin.trim()).filter(Boolean);
+const footageRate = new Map();
+
+app.use((request, response, next) => {
+  const origin = request.get("origin");
+  if (origin && allowedOrigins.includes(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+    response.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (request.method === "OPTIONS") return response.sendStatus(204);
+  next();
+});
+
+app.get("/api/footage/search", async (request, response) => {
+  const origin = request.get("origin");
+  if (origin && !allowedOrigins.includes(origin)) {
+    return response.status(403).json({ ok: false, error: "Origin tidak diizinkan." });
+  }
+  if (!pexelsApiKey) {
+    return response.status(503).json({ ok: false, error: "Pexels API belum dikonfigurasi di server." });
+  }
+
+  const query = String(request.query.q || "").trim().slice(0, 120);
+  const orientation = ["portrait", "landscape", "square"].includes(request.query.orientation)
+    ? request.query.orientation : "portrait";
+  const page = Math.max(1, Math.min(100, Number.parseInt(request.query.page, 10) || 1));
+  if (query.length < 2) {
+    return response.status(400).json({ ok: false, error: "Kata kunci minimal 2 karakter." });
+  }
+
+  const clientIp = request.ip || request.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const bucket = footageRate.get(clientIp);
+  if (!bucket || now - bucket.startedAt > 60_000) {
+    footageRate.set(clientIp, { startedAt: now, count: 1 });
+  } else if (bucket.count >= 20) {
+    return response.status(429).json({ ok: false, error: "Terlalu banyak pencarian. Coba lagi sebentar." });
+  } else {
+    bucket.count += 1;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      query, orientation, page: String(page), per_page: "12", locale: "id-ID"
+    });
+    const upstream = await fetch("https://api.pexels.com/v1/videos/search?" + params.toString(), {
+      headers: { Authorization: pexelsApiKey },
+      signal: AbortSignal.timeout(15_000)
+    });
+    if (!upstream.ok) {
+      const status = upstream.status === 429 ? 429 : 502;
+      return response.status(status).json({
+        ok: false,
+        error: upstream.status === 429
+          ? "Kuota Pexels sedang mencapai batas. Coba lagi nanti."
+          : "Penyedia footage belum dapat memproses pencarian."
+      });
+    }
+
+    const payload = await upstream.json();
+    const videos = (payload.videos || []).map(video => {
+      const files = (video.video_files || [])
+        .filter(file => file.link && file.file_type === "video/mp4")
+        .sort((a, b) => (b.width || 0) - (a.width || 0));
+      const chosen = files.find(file => (file.width || 0) <= 1920) || files[0];
+      return {
+        id: video.id,
+        title: video.url,
+        thumbnail: video.image,
+        duration: video.duration,
+        width: video.width,
+        height: video.height,
+        pageUrl: video.url,
+        creator: video.user?.name || "Kontributor Pexels",
+        creatorUrl: video.user?.url || "https://www.pexels.com",
+        fileUrl: chosen?.link || null,
+        fileWidth: chosen?.width || null,
+        fileHeight: chosen?.height || null
+      };
+    }).filter(video => video.fileUrl);
+
+    response.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
+    return response.json({
+      ok: true, provider: "Pexels", page, totalResults: payload.total_results || 0, videos
+    });
+  } catch (error) {
+    return response.status(502).json({
+      ok: false,
+      error: "Pencarian footage gagal. Periksa koneksi server dan coba lagi."
+    });
+  }
+});
+
 app.get("/health", (_request, response) => {
   response.json({
     ok: true,
