@@ -10,6 +10,7 @@ const browserlessEndpoint =
   process.env.BROWSERLESS_WS_ENDPOINT || "wss://production-ams.browserless.io";
 
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(express.json({ limit: "10kb" }));
 
 function isAuthorized(request) {
@@ -120,11 +121,20 @@ app.get("/api/footage/search", async (request, response) => {
   }
 });
 
+const rateCleanup = setInterval(() => {
+  const cutoff = Date.now() - 60000;
+  for (const [ip, bucket] of footageRate) {
+    if (bucket.startedAt < cutoff) footageRate.delete(ip);
+  }
+}, 60000);
+rateCleanup.unref();
+
 app.get("/health", (_request, response) => {
   response.json({
     ok: true,
     service: "zaida-content-automation-worker",
-    browserConfigured: Boolean(browserlessToken)
+    browserConfigured: Boolean(browserlessToken),
+    footageConfigured: Boolean(pexelsApiKey)
   });
 });
 
