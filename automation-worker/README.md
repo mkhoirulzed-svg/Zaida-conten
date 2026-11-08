@@ -41,3 +41,8 @@ The footage endpoint has a simple per-IP in-memory limit of 20 searches per minu
 ## Current scope
 
 This is a connectivity proof, not the production content automation pipeline. It does not log in to AI sites, generate images, upload files, or create videos. Those tasks will be added only after this remote-browser test passes.
+
+
+## Cloudflare footage API
+
+The public footage-search endpoint has been moved to the Cloudflare Worker in `cloudflare-worker/`. The Node.js service in this directory remains for the separate Playwright browser smoke test and is no longer required for Pixabay footage search.
