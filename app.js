@@ -19,8 +19,42 @@ let selectedStyle = "", format = "9:16", activeFilter = "Semua", currentProjectI
 let projects = loadProjects();
 
 function loadProjects() {
-  try { const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); return Array.isArray(value) ? value : []; }
-  catch { return []; }
+  try {
+    const current = localStorage.getItem(STORAGE_KEY);
+    if (current !== null) {
+      const parsed = JSON.parse(current);
+      return Array.isArray(parsed) ? parsed.filter(project => project && project.id && Array.isArray(project.scenes)) : [];
+    }
+    // Migrasi otomatis dari penyimpanan versi sebelumnya agar draft lama tetap muncul.
+    const legacy = localStorage.getItem("zaida-content-projects-v1");
+    if (!legacy) return [];
+    const parsedLegacy = JSON.parse(legacy);
+    if (!Array.isArray(parsedLegacy)) return [];
+    const migrated = parsedLegacy
+      .filter(project => project && typeof project === "object")
+      .map((project, index) => ({
+        ...project,
+        id: project.id || "legacy-" + Date.now() + "-" + index,
+        title: project.title || "Proyek tanpa judul",
+        style: project.style || "Kartun Flat",
+        format: project.format || "9:16",
+        script: project.script || (Array.isArray(project.scenes) ? project.scenes.map(scene => scene.text || "").join(" ") : ""),
+        scenes: Array.isArray(project.scenes) ? project.scenes.map((scene, sceneIndex) => ({
+          id: scene.id || "legacy-scene-" + index + "-" + sceneIndex,
+          text: scene.text || "",
+          title: scene.title || makeSceneTitle(scene.text || "", sceneIndex),
+          keywords: scene.keywords || makeKeywords(scene.text || ""),
+          duration: Number(scene.duration) || 6
+        })) : [],
+        createdAt: project.createdAt || new Date().toISOString(),
+        status: project.status || "draft"
+      }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+    return migrated;
+  } catch {
+    showNotice("Sebagian draft lama tidak dapat dibaca. Data asli tidak dihapus.");
+    return [];
+  }
 }
 function persistProjects() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); return true; }
@@ -110,9 +144,17 @@ function openProject(id) {
 }
 function renderScenes() {
   const project = currentProject(); if (!project) return;
+  if (!Array.isArray(project.scenes)) project.scenes = [];
   const list = $("#sceneList"); list.innerHTML = "";
   $("#sceneCount").textContent = project.scenes.length + " adegan";
   $("#storyboardSubtitle").textContent = project.scenes.length + " adegan · Gaya " + project.style;
+  if (project.scenes.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-scenes";
+    empty.textContent = "Belum ada adegan. Tambahkan adegan atau edit naskah untuk menyusun storyboard kembali.";
+    list.append(empty);
+    return;
+  }
   project.scenes.forEach((scene, index) => {
     const card = document.createElement("article"); card.className = "scene-card";
     const head = document.createElement("div"); head.className = "scene-head";
