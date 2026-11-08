@@ -4,3 +4,15 @@
 @media(max-width:720px){.app-shell{padding:0 14px 20px}.topbar{height:62px}.hero{padding:30px 2px 20px}.create-panel,.style-section,.storyboard-section{padding:17px;border-radius:17px}.style-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.style-art{height:116px}.format-row{align-items:flex-start;flex-direction:column}.format-options{width:100%}.format-option{flex:1}.style-name{font-size:12px}.style-category{font-size:10px}.bottom-action{margin:0 -14px;padding:16px 14px 12px}.primary-button{width:100%}.storyboard-heading{align-items:flex-start}.scene-card{padding:12px}.storyboard-footer{align-items:flex-start;flex-direction:column}.next-step-panel{align-items:flex-start}.coming-soon{margin-top:3px}}
 @media(min-width:721px) and (max-width:900px){.style-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;scroll-behavior:auto!important}}
+
+
+/* Empty storyboard state */
+.empty-scenes {
+  padding: 28px 22px;
+  border: 1px dashed var(--border, #34384a);
+  border-radius: 14px;
+  color: var(--muted, #9ca3b5);
+  background: rgba(255,255,255,.02);
+  text-align: center;
+  line-height: 1.6;
+}
