@@ -3,33 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#10101a">
-  <meta name="description" content="ZAIDA Content — studio konten otomatis.">
-  <title>ZAIDA Content</title>
+  <meta name="theme-color" content="#0c0d14">
+  <meta name="description" content="ZAIDA Content Studio — susun naskah menjadi storyboard video.">
+  <title>ZAIDA Content Studio</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="./" aria-label="ZAIDA Content">
-        <span class="brand-mark">Z</span><span>ZAIDA <b>Content</b></span>
-      </a>
-      <span class="beta">BETA</span>
+      <a class="brand" href="./" aria-label="ZAIDA Content"><span class="brand-mark">Z</span><span>ZAIDA <b>Content</b></span></a>
+      <span class="beta">STUDIO</span>
       <button class="avatar" aria-label="Profil">Z</button>
     </header>
-
     <main>
       <section id="homeView">
         <section class="hero">
-          <div class="eyebrow"><span class="pulse"></span> CREATIVE STUDIO</div>
-          <h1>Ide jadi <span>konten.</span></h1>
-          <p>Buat video faceless dengan lebih mudah.</p>
+          <div class="eyebrow"><span class="pulse"></span> YOUR CONTENT WORKSPACE</div>
+          <h1>From script to <span>storyboard.</span></h1>
+          <p>Siapkan naskah. ZAIDA membantu menyusun adegan video.</p>
         </section>
-
         <section class="create-panel">
-          <div class="section-title"><span class="step">01</span><div><h2>Mulai dari ide</h2><p>Apa yang ingin kamu buat hari ini?</p></div></div>
-          <label class="sr-only" for="topic">Ide konten</label>
-          <textarea id="topic" rows="3" maxlength="500" placeholder="Contoh: 5 fakta menarik tentang kesehatan jantung..."></textarea>
+          <div class="section-title"><span class="step">01</span><div><h2>Mulai proyek video</h2><p>Tempel naskah atau tulis ide kontenmu.</p></div></div>
+          <label class="field-label" for="topic">NASKAH / IDE KONTEN</label>
+          <textarea id="topic" rows="6" maxlength="12000" placeholder="Contoh: Jantung manusia bekerja tanpa henti. Setiap menit, jantung memompa darah ke seluruh tubuh..."></textarea>
+          <div class="input-footer"><span id="charCount">0 / 12.000</span><span>Bahasa Indonesia</span></div>
           <div class="format-row">
             <span class="field-caption">FORMAT VIDEO</span>
             <div class="format-options" role="group" aria-label="Format video">
@@ -38,55 +35,56 @@
             </div>
           </div>
         </section>
-
         <section class="style-section">
-          <div class="section-title"><span class="step">02</span><div><h2>Pilih gaya visual</h2><p>Satu gaya untuk seluruh adegan.</p></div></div>
+          <div class="section-title"><span class="step">02</span><div><h2>Tentukan gaya visual</h2><p>Gaya ini menjadi acuan visual seluruh adegan.</p></div></div>
           <div class="filters" id="filters" role="group" aria-label="Kategori gaya visual">
             <button class="filter active" data-filter="Semua">Semua <span>24</span></button>
-            <button class="filter" data-filter="2D">2D</button>
-            <button class="filter" data-filter="3D">3D</button>
-            <button class="filter" data-filter="Sinematik">Sinematik</button>
-            <button class="filter" data-filter="Artistik">Artistik</button>
+            <button class="filter" data-filter="2D">2D</button><button class="filter" data-filter="3D">3D</button>
+            <button class="filter" data-filter="Sinematik">Sinematik</button><button class="filter" data-filter="Artistik">Artistik</button>
           </div>
           <div class="style-grid" id="styleGrid" aria-live="polite"></div>
           <div class="selected-note" id="selectedNote">Pilih satu gaya visual untuk melanjutkan.</div>
         </section>
-
         <div class="bottom-action">
-          <button id="startButton" class="primary-button" disabled>Buat proyek <span>→</span></button>
-          <p>Pengaturan lainnya bisa dilakukan nanti.</p>
+          <button id="startButton" class="primary-button" disabled>Susun storyboard <span>→</span></button>
+          <p>Naskah dan pilihanmu tersimpan sebagai draft di browser.</p>
         </div>
-
         <section class="recent-section" id="recentSection" hidden>
-          <div class="recent-heading"><div><h2>Proyek terakhir</h2><p>Draft yang tersimpan di perangkat ini.</p></div><span id="projectCount">0 proyek</span></div>
+          <div class="recent-heading"><div><h2>Proyek terakhir</h2><p>Lanjutkan pekerjaanmu.</p></div><span id="projectCount">0 proyek</span></div>
           <div id="projectList" class="project-list"></div>
         </section>
       </section>
-
       <section id="projectView" class="project-view" hidden>
-        <button id="backButton" class="back-button">← <span>Kembali</span></button>
+        <button id="backButton" class="back-button">← <span>Semua proyek</span></button>
         <div class="project-hero">
-          <div class="project-kicker">PROYEK ZAIDA</div>
+          <div class="project-kicker">CONTENT WORKSPACE</div>
           <h1 id="projectTitle">Proyek baru</h1>
           <p id="projectMeta"></p>
           <div class="project-chips"><span id="projectStyle"></span><span id="projectFormat"></span><span class="draft-chip">Draft</span></div>
         </div>
         <div class="project-progress">
-          <div class="progress-head"><b>Proses konten</b><span>Belum dimulai</span></div>
+          <div class="progress-head"><b>Alur produksi</b><span id="sceneCount">0 adegan</span></div>
           <div class="progress-track"><i></i></div>
-          <div class="progress-steps"><span class="current">Ide</span><span>Naskah</span><span>Visual</span><span>Video</span></div>
+          <div class="progress-steps"><span class="current">Naskah</span><span>Footage</span><span>Voice-over</span><span>Video</span></div>
         </div>
-        <div class="project-placeholder">
-          <div class="placeholder-icon">✦</div>
-          <h2>Proyek siap dimulai</h2>
-          <p>Naskah, suara, gambar, dan video akan dikerjakan dari sini setelah mesin produksi diaktifkan.</p>
-          <span class="local-label">Draft tersimpan di perangkat ini</span>
-        </div>
+        <section class="storyboard-section">
+          <div class="storyboard-heading"><div><h2>Storyboard</h2><p id="storyboardSubtitle">Adegan yang disusun dari naskahmu.</p></div><button id="editScriptButton" class="ghost-button">Edit naskah</button></div>
+          <div id="scriptEditor" class="script-editor" hidden>
+            <label class="field-label" for="editScript">NASKAH PROYEK</label>
+            <textarea id="editScript" rows="7" maxlength="12000"></textarea>
+            <div class="editor-actions"><button id="cancelEditButton" class="ghost-button">Batal</button><button id="saveScriptButton" class="small-primary">Simpan & susun ulang</button></div>
+          </div>
+          <div id="sceneList" class="scene-list"></div>
+          <div class="storyboard-footer"><span id="storyboardStatus">Storyboard dibuat secara lokal dari naskah.</span><button id="addSceneButton" class="ghost-button">＋ Tambah adegan</button></div>
+        </section>
+        <section class="next-step-panel">
+          <div class="next-icon">✦</div><div><b>Berikutnya: cari footage</b><p>Pencarian video dan gambar dari sumber stok akan dihubungkan pada tahap integrasi berikutnya.</p></div>
+          <span class="coming-soon">SEGERA</span>
+        </section>
       </section>
-
       <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
     </main>
-    <footer>ZAIDA Content <span>•</span> Dibuat untuk berkarya</footer>
+    <footer>ZAIDA Content <span>•</span> Creative workspace</footer>
   </div>
   <script src="./app.js" defer></script>
 </body>
