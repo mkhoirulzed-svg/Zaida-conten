@@ -25,16 +25,38 @@ const styles = [
   ["Sketsa Arang","Artistik","🖤","linear-gradient(135deg,#88858b,#33343b)"]
 ];
 
+const STORAGE_KEY = "zaida-content-projects-v1";
 const grid = document.querySelector("#styleGrid");
 const filters = document.querySelector("#filters");
 const note = document.querySelector("#selectedNote");
 const topic = document.querySelector("#topic");
 const startButton = document.querySelector("#startButton");
 const notice = document.querySelector("#notice");
+const homeView = document.querySelector("#homeView");
+const projectView = document.querySelector("#projectView");
+const recentSection = document.querySelector("#recentSection");
+const projectList = document.querySelector("#projectList");
 let selectedStyle = "";
 let format = "9:16";
 let activeFilter = "Semua";
+let projects = loadProjects();
 
+function loadProjects() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+function persistProjects() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    return true;
+  } catch {
+    return false;
+  }
+}
 function renderStyles() {
   grid.innerHTML = "";
   styles.forEach(([name, category, symbol, art]) => {
@@ -54,6 +76,39 @@ function renderStyles() {
     grid.appendChild(card);
   });
 }
+function renderProjects() {
+  recentSection.hidden = projects.length === 0;
+  document.querySelector("#projectCount").textContent = projects.length + (projects.length === 1 ? " proyek" : " proyek");
+  projectList.innerHTML = "";
+  projects.slice(0, 5).forEach(project => {
+    const style = styles.find(item => item[0] === project.style);
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "project-card";
+    card.innerHTML = `<span class="project-thumb">${style?.[2] || "✦"}</span><span class="project-card-info"><b></b><small></small></span><span class="project-arrow">›</span>`;
+    card.querySelector("b").textContent = project.title;
+    card.querySelector("small").textContent = project.style + " · " + project.format + " · Draft";
+    card.addEventListener("click", () => openProject(project.id));
+    projectList.appendChild(card);
+  });
+}
+function openProject(id) {
+  const project = projects.find(item => item.id === id);
+  if (!project) return;
+  document.querySelector("#projectTitle").textContent = project.title;
+  document.querySelector("#projectMeta").textContent = new Date(project.createdAt).toLocaleString("id-ID", {dateStyle:"medium",timeStyle:"short"});
+  document.querySelector("#projectStyle").textContent = project.style;
+  document.querySelector("#projectFormat").textContent = project.format;
+  homeView.hidden = true;
+  projectView.hidden = false;
+  notice.hidden = true;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function showHome() {
+  projectView.hidden = true;
+  homeView.hidden = false;
+  window.scrollTo({top:0,behavior:"smooth"});
+}
 filters.addEventListener("click", event => {
   const button = event.target.closest("[data-filter]");
   if (!button) return;
@@ -70,8 +125,34 @@ topic.addEventListener("input", () => {
   notice.hidden = true;
 });
 startButton.addEventListener("click", () => {
-  if (!topic.value.trim() || !selectedStyle) return;
-  notice.textContent = "Pilihan proyek tersimpan di tampilan prototipe: " + selectedStyle + " · " + format + ". Mesin AI dan otomatisasi belum diaktifkan; tahap ini khusus menguji fondasi UI.";
-  notice.hidden = false;
+  const idea = topic.value.trim();
+  if (!idea || !selectedStyle) return;
+  const project = {
+    id: (window.crypto?.randomUUID?.() || "project-" + Date.now()),
+    title: idea.length > 54 ? idea.slice(0, 51) + "..." : idea,
+    topic: idea,
+    style: selectedStyle,
+    format,
+    createdAt: new Date().toISOString(),
+    status: "draft"
+  };
+  projects.unshift(project);
+  projects = projects.slice(0, 30);
+  const saved = persistProjects();
+  renderProjects();
+  topic.value = "";
+  selectedStyle = "";
+  format = "9:16";
+  document.querySelectorAll(".format-option").forEach(item => item.classList.toggle("selected", item.dataset.format === format));
+  note.textContent = "Pilih satu gaya visual untuk melanjutkan.";
+  startButton.disabled = true;
+  renderStyles();
+  openProject(project.id);
+  if (!saved) {
+    notice.textContent = "Proyek dibuka, tetapi browser tidak mengizinkan penyimpanan lokal. Draft ini mungkin hilang saat halaman ditutup.";
+    notice.hidden = false;
+  }
 });
+document.querySelector("#backButton").addEventListener("click", showHome);
 renderStyles();
+renderProjects();
