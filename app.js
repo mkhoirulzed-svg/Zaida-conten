@@ -197,5 +197,4 @@ $("#saveScriptButton").addEventListener("click", () => {
   $("#projectTitle").textContent = project.title; $("#scriptEditor").hidden = true; renderScenes(); renderProjects();
   showNotice("Naskah diperbarui dan storyboard disusun ulang.");
 });
-$("#addSceneButton").addEventListener("click", addScene);
 updateCreateButton(); renderStyles(); renderProjects();
