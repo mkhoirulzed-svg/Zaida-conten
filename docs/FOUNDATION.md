@@ -87,6 +87,9 @@ Menjalankan browser cloud untuk tugas yang memerlukan interaksi dengan situs AI:
 - HP menjadi pusat kendali; worker berjalan di cloud.
 - Jangan mengandalkan ekstensi Chrome desktop yang harus dipasang di HP.
 - Antarmuka layanan pihak ketiga dapat berubah; otomatisasi harus diuji dan memiliki penanganan kegagalan.
+- Kerangka awal tersedia di `automation-worker/`, menggunakan Node.js, Playwright Core, dan Browserless BaaS melalui CDP.
+- Smoke test pertama hanya membuka `example.com`, membaca judul dan heading, lalu menutup browser. Endpoint worker dilindungi secret server-to-server.
+- Browserless token dan secret worker hanya disimpan sebagai environment secrets di hosting; jangan pernah memasukkannya ke frontend atau Git.
 
 ### D. Video Composition / Renderer
 FFmpeg menggabungkan gambar adegan, voice-over, caption, musik, dan transisi menjadi MP4. Tidak perlu editor timeline kompleks seperti CapCut pada MVP.
@@ -134,12 +137,13 @@ Target uji coba: **Rp0 atau serendah mungkin**.
 **Lulus:** pengguna dapat membuat proyek dan memilih gaya dengan nyaman dari HP.
 
 ### Tahap 2 — Uji Browser Automation
-- Dari HP, pengguna mengirim satu prompt.
-- Backend meneruskan pekerjaan ke browser worker.
-- Browser menjalankan satu tugas yang didukung.
-- Status dan hasil kembali ke aplikasi.
+- Kerangka worker Node.js dan endpoint smoke test sudah disiapkan di `automation-worker/`.
+- Siapkan akun/token Browserless dan secret worker melalui environment variables (jangan commit secret).
+- Jalankan smoke test dari lingkungan server ke `example.com`.
+- Setelah koneksi worker terbukti, hubungkan melalui backend yang terautentikasi agar HP tidak pernah menerima secret Browserless.
+- Baru setelah itu uji satu alur interaksi halaman yang diizinkan.
 
-**Lulus:** alur nyata dari HP sampai hasil diterima berhasil; bukan sekadar tombol/UI yang terlihat bekerja.
+**Lulus:** alur nyata dari HP melalui backend terautentikasi sampai hasil browser diterima berhasil; bukan sekadar tombol/UI yang terlihat bekerja.
 
 ### Tahap 3 — Naskah, suara, dan storyboard
 - Buat naskah dan pembagian adegan.
