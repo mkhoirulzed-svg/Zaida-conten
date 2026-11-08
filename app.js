@@ -191,7 +191,7 @@ function renderScenes() {
     const resultGrid = document.createElement("div"); resultGrid.className = "footage-results";
     autoSearch.addEventListener("click", () => searchFootage(scene, project, searchQuery, autoSearch, searchStatus, resultGrid));
     const providerRow = document.createElement("div"); providerRow.className = "footage-providers";
-    [["Pexels","https://www.pexels.com/search/videos/"],["Pixabay","https://pixabay.com/videos/search/"]].forEach(([label, base]) => {
+    [["Pixabay","https://pixabay.com/videos/search/"],["Pixabay","https://pixabay.com/videos/search/"]].forEach(([label, base]) => {
       const link = document.createElement("a"); link.className = "footage-provider";
       link.href = base + encodeURIComponent(searchQuery || "cinematic background");
       link.target = "_blank"; link.rel = "noopener noreferrer"; link.textContent = "Cari di " + label;
@@ -237,7 +237,7 @@ async function searchFootage(scene, project, query, button, status, results) {
     return;
   }
   button.disabled = true; button.textContent = "Mencari...";
-  status.textContent = "Mengambil pilihan video dari Pexels...";
+  status.textContent = "Mengambil pilihan video dari Pixabay...";
   results.innerHTML = "";
   try {
     const orientation = project.format === "16:9" ? "landscape" : "portrait";
@@ -255,21 +255,21 @@ async function searchFootage(scene, project, query, button, status, results) {
     status.textContent = payload.videos.length + " pilihan video ditemukan · Pexels";
     payload.videos.forEach(video => {
       const item = document.createElement("article"); item.className = "footage-result";
-      const thumb = document.createElement("img"); thumb.src = video.thumbnail; thumb.alt = "Preview footage dari Pexels"; thumb.loading = "lazy";
+      const thumb = document.createElement("img"); thumb.src = video.thumbnail; thumb.alt = "Preview footage dari Pixabay"; thumb.loading = "lazy";
       const meta = document.createElement("div"); meta.className = "footage-result-meta";
       const detail = document.createElement("span");
       detail.textContent = (video.width && video.height ? video.width + "×" + video.height + " · " : "") + (video.duration || 0) + " dtk";
       const credit = document.createElement("a"); credit.href = video.pageUrl; credit.target = "_blank"; credit.rel = "noopener noreferrer";
-      credit.textContent = "Video oleh " + video.creator + " · Pexels";
+      credit.textContent = "Video oleh " + video.creator + " · Pixabay";
       const choose = document.createElement("button"); choose.type = "button"; choose.className = "footage-choose"; choose.textContent = "Pilih video";
       choose.disabled = !video.fileUrl;
       choose.addEventListener("click", () => {
         scene.footageUrl = video.fileUrl;
-        scene.footageSource = "Pexels";
+        scene.footageSource = "Pixabay";
         scene.footagePageUrl = video.pageUrl;
         scene.footageCreator = video.creator;
         persistProjects(); renderScenes(); renderProjects();
-        showNotice("Footage Pexels berhasil dipilih untuk adegan ini.");
+        showNotice("Footage Pixabay berhasil dipilih untuk adegan ini.");
       });
       meta.append(detail, credit, choose); item.append(thumb, meta); results.append(item);
     });
