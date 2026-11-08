@@ -165,18 +165,60 @@ function renderScenes() {
     name.append(title); head.append(number, name, duration);
     const body = document.createElement("p"); body.className = "scene-copy"; body.textContent = scene.text;
     const visual = document.createElement("div"); visual.className = "scene-visual";
-    const visualIcon = document.createElement("span"); visualIcon.className = "visual-placeholder-icon"; visualIcon.textContent = "▧";
-    const visualText = document.createElement("span"); visualText.textContent = "Footage belum dipilih";
-    const visualTag = document.createElement("small"); visualTag.textContent = "PENCARIAN FOOTAGE";
-    visual.append(visualIcon, visualText, visualTag);
-    const keywordLabel = document.createElement("div"); keywordLabel.className = "keyword-label"; keywordLabel.textContent = "KATA KUNCI";
-    const keywords = document.createElement("div"); keywords.className = "scene-keywords"; keywords.textContent = scene.keywords || "Tambahkan kata kunci";
+    if (scene.footageUrl) {
+      const preview = document.createElement("video");
+      preview.className = "scene-video-preview"; preview.src = scene.footageUrl;
+      preview.controls = true; preview.preload = "metadata"; preview.playsInline = true;
+      preview.setAttribute("aria-label", "Preview footage adegan " + (index + 1));
+      visual.classList.add("has-footage"); visual.append(preview);
+    } else {
+      const visualIcon = document.createElement("span"); visualIcon.className = "visual-placeholder-icon"; visualIcon.textContent = "▧";
+      const visualText = document.createElement("span"); visualText.textContent = "Belum ada footage";
+      const visualTag = document.createElement("small"); visualTag.textContent = "VISUAL ADEGAN";
+      visual.append(visualIcon, visualText, visualTag);
+    }
+    const keywordLabel = document.createElement("div"); keywordLabel.className = "keyword-label"; keywordLabel.textContent = "KATA KUNCI PENCARIAN";
+    const keywords = document.createElement("div"); keywords.className = "scene-keywords"; keywords.textContent = scene.keywords || scene.title || "Tambahkan kata kunci";
+    const footagePanel = document.createElement("div"); footagePanel.className = "footage-panel";
+    const searchQuery = [scene.keywords, scene.title].filter(Boolean).join(" ").trim();
+    const providerRow = document.createElement("div"); providerRow.className = "footage-providers";
+    [["Pexels","https://www.pexels.com/search/videos/"],["Pixabay","https://pixabay.com/videos/search/"]].forEach(([label, base]) => {
+      const link = document.createElement("a"); link.className = "footage-provider";
+      link.href = base + encodeURIComponent(searchQuery || "cinematic background");
+      link.target = "_blank"; link.rel = "noopener noreferrer"; link.textContent = "Cari di " + label;
+      providerRow.append(link);
+    });
+    const urlLabel = document.createElement("label"); urlLabel.className = "footage-url-label";
+    urlLabel.textContent = "Tempel URL file video langsung (.mp4 / .webm)";
+    const urlInput = document.createElement("input"); urlInput.type = "url";
+    urlInput.className = "footage-url-input"; urlInput.placeholder = "https://.../video.mp4";
+    urlInput.value = scene.footageUrl || ""; urlInput.inputMode = "url";
+    urlLabel.append(urlInput);
+    const saveFootage = document.createElement("button"); saveFootage.type = "button";
+    saveFootage.className = "small-primary footage-save"; saveFootage.textContent = scene.footageUrl ? "Ganti footage" : "Simpan footage";
+    saveFootage.addEventListener("click", () => {
+      const value = urlInput.value.trim();
+      if (!value) { scene.footageUrl = ""; persistProjects(); renderScenes(); return; }
+      try {
+        const parsed = new URL(value);
+        if (!["http:","https:"].includes(parsed.protocol) || !/\.(mp4|webm|ogg)(\?.*)?$/i.test(parsed.pathname + parsed.search)) {
+          showNotice("Gunakan URL file video langsung berformat MP4, WebM, atau OGG. Tautan halaman pencarian tidak bisa diputar sebagai footage.");
+          return;
+        }
+        scene.footageUrl = parsed.href;
+        persistProjects(); renderScenes(); renderProjects();
+        showNotice("Footage disimpan pada adegan ini.");
+      } catch {
+        showNotice("URL footage belum valid. Periksa kembali tautannya.");
+      }
+    });
+    footagePanel.append(providerRow, urlLabel, saveFootage);
     const actions = document.createElement("div"); actions.className = "scene-actions";
     const edit = document.createElement("button"); edit.type = "button"; edit.className = "ghost-button"; edit.textContent = "Edit adegan";
     edit.addEventListener("click", () => editScene(scene.id));
     const remove = document.createElement("button"); remove.type = "button"; remove.className = "icon-button"; remove.setAttribute("aria-label", "Hapus adegan"); remove.textContent = "×";
     remove.addEventListener("click", () => { project.scenes = project.scenes.filter(item => item.id !== scene.id); persistProjects(); renderScenes(); renderProjects(); });
-    actions.append(edit, remove); card.append(head, body, visual, keywordLabel, keywords, actions); list.append(card);
+    actions.append(edit, remove); card.append(head, body, visual, keywordLabel, keywords, footagePanel, actions); list.append(card);
   });
 }
 function editScene(id) {
