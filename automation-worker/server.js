@@ -24,10 +24,12 @@ function isAuthorized(request) {
 }
 
 
-const pexelsApiKey = process.env.PEXELS_API_KEY;
+const pixabayApiKey = process.env.PIXABAY_API_KEY;
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:5500,http://127.0.0.1:5500")
   .split(",").map(origin => origin.trim()).filter(Boolean);
 const footageRate = new Map();
+const footageCache = new Map();
+const FOOTAGE_CACHE_TTL = 24 * 60 * 60 * 1000;
 
 app.use((request, response, next) => {
   const origin = request.get("origin");
@@ -46,11 +48,11 @@ app.get("/api/footage/search", async (request, response) => {
   if (origin && !allowedOrigins.includes(origin)) {
     return response.status(403).json({ ok: false, error: "Origin tidak diizinkan." });
   }
-  if (!pexelsApiKey) {
-    return response.status(503).json({ ok: false, error: "Pexels API belum dikonfigurasi di server." });
+  if (!pixabayApiKey) {
+    return response.status(503).json({ ok: false, error: "Pixabay API belum dikonfigurasi di server." });
   }
 
-  const query = String(request.query.q || "").trim().slice(0, 120);
+  const query = String(request.query.q || "").trim().slice(0, 100);
   const orientation = ["portrait", "landscape", "square"].includes(request.query.orientation)
     ? request.query.orientation : "portrait";
   const page = Math.max(1, Math.min(100, Number.parseInt(request.query.page, 10) || 1));
@@ -69,12 +71,21 @@ app.get("/api/footage/search", async (request, response) => {
     bucket.count += 1;
   }
 
+  const cacheKey = [query.toLowerCase(), orientation, page].join("|");
+  const cached = footageCache.get(cacheKey);
+  if (cached && now - cached.cachedAt < FOOTAGE_CACHE_TTL) {
+    response.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+    return response.json({ ...cached.payload, cached: true });
+  }
+
   try {
     const params = new URLSearchParams({
-      query, orientation, page: String(page), per_page: "12", locale: "id-ID"
+      key: pixabayApiKey, q: query, lang: "id", page: String(page), per_page: "12",
+      safesearch: "true", order: "popular"
     });
-    const upstream = await fetch("https://api.pexels.com/v1/videos/search?" + params.toString(), {
-      headers: { Authorization: pexelsApiKey },
+    if (orientation === "portrait") params.set("min_height", "720");
+    if (orientation === "landscape") params.set("min_width", "1280");
+    const upstream = await fetch("https://pixabay.com/api/videos/?" + params.toString(), {
       signal: AbortSignal.timeout(15_000)
     });
     if (!upstream.ok) {
@@ -82,37 +93,42 @@ app.get("/api/footage/search", async (request, response) => {
       return response.status(status).json({
         ok: false,
         error: upstream.status === 429
-          ? "Kuota Pexels sedang mencapai batas. Coba lagi nanti."
-          : "Penyedia footage belum dapat memproses pencarian."
+          ? "Kuota Pixabay sedang mencapai batas. Coba lagi nanti."
+          : "Pixabay belum dapat memproses pencarian."
       });
     }
 
     const payload = await upstream.json();
-    const videos = (payload.videos || []).map(video => {
-      const files = (video.video_files || [])
-        .filter(file => file.link && file.file_type === "video/mp4")
-        .sort((a, b) => (b.width || 0) - (a.width || 0));
-      const chosen = files.find(file => (file.width || 0) <= 1920) || files[0];
+    const videos = (payload.hits || []).map(video => {
+      const variants = video.videos || {};
+      const chosen = variants.medium?.url ? variants.medium
+        : variants.large?.url ? variants.large
+        : variants.small?.url ? variants.small
+        : variants.tiny;
       return {
         id: video.id,
-        title: video.url,
-        thumbnail: video.image,
-        duration: video.duration,
-        width: video.width,
-        height: video.height,
-        pageUrl: video.url,
-        creator: video.user?.name || "Kontributor Pexels",
-        creatorUrl: video.user?.url || "https://www.pexels.com",
-        fileUrl: chosen?.link || null,
+        title: (video.tags || "Video Pixabay").split(",").slice(0, 3).join(", "),
+        thumbnail: chosen?.thumbnail || variants.small?.thumbnail || variants.tiny?.thumbnail || null,
+        duration: video.duration || 0,
+        width: chosen?.width || null,
+        height: chosen?.height || null,
+        pageUrl: video.pageURL || "https://pixabay.com/videos/",
+        creator: video.user || "Kontributor Pixabay",
+        creatorUrl: video.user
+          ? "https://pixabay.com/users/" + encodeURIComponent(video.user) + "-" + encodeURIComponent(video.user_id || "") + "/"
+          : "https://pixabay.com",
+        fileUrl: chosen?.url || null,
         fileWidth: chosen?.width || null,
         fileHeight: chosen?.height || null
       };
     }).filter(video => video.fileUrl);
 
-    response.setHeader("Cache-Control", "public, max-age=120, s-maxage=120");
-    return response.json({
-      ok: true, provider: "Pexels", page, totalResults: payload.total_results || 0, videos
-    });
+    const result = {
+      ok: true, provider: "Pixabay", page, totalResults: payload.totalHits || payload.total || 0, videos
+    };
+    footageCache.set(cacheKey, { cachedAt: now, payload: result });
+    response.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+    return response.json(result);
   } catch (error) {
     return response.status(502).json({
       ok: false,
@@ -120,11 +136,14 @@ app.get("/api/footage/search", async (request, response) => {
     });
   }
 });
-
 const rateCleanup = setInterval(() => {
   const cutoff = Date.now() - 60000;
+  const cacheCutoff = Date.now() - FOOTAGE_CACHE_TTL;
   for (const [ip, bucket] of footageRate) {
     if (bucket.startedAt < cutoff) footageRate.delete(ip);
+  }
+  for (const [key, entry] of footageCache) {
+    if (entry.cachedAt < cacheCutoff) footageCache.delete(key);
   }
 }, 60000);
 rateCleanup.unref();
@@ -134,7 +153,7 @@ app.get("/health", (_request, response) => {
     ok: true,
     service: "zaida-content-automation-worker",
     browserConfigured: Boolean(browserlessToken),
-    footageConfigured: Boolean(pexelsApiKey)
+    footageConfigured: Boolean(pixabayApiKey)
   });
 });
 
