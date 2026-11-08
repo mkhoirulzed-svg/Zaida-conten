@@ -83,8 +83,6 @@ app.get("/api/footage/search", async (request, response) => {
       key: pixabayApiKey, q: query, lang: "id", page: String(page), per_page: "12",
       safesearch: "true", order: "popular"
     });
-    if (orientation === "portrait") params.set("min_height", "720");
-    if (orientation === "landscape") params.set("min_width", "1280");
     const upstream = await fetch("https://pixabay.com/api/videos/?" + params.toString(), {
       signal: AbortSignal.timeout(15_000)
     });
@@ -99,7 +97,12 @@ app.get("/api/footage/search", async (request, response) => {
     }
 
     const payload = await upstream.json();
-    const videos = (payload.hits || []).map(video => {
+    const videos = (payload.hits || []).filter(video => {
+      const width = video.videos?.medium?.width || video.videos?.large?.width || video.videos?.small?.width || 0;
+      const height = video.videos?.medium?.height || video.videos?.large?.height || video.videos?.small?.height || 0;
+      if (!width || !height || orientation === "square") return true;
+      return orientation === "portrait" ? height > width : width >= height;
+    }).map(video => {
       const variants = video.videos || {};
       const chosen = variants.medium?.url ? variants.medium
         : variants.large?.url ? variants.large
