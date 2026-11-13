@@ -55,6 +55,7 @@ async function convertLastWebmToMp4(){
   output.addAudioTrack(audioSource);
   await output.start();
   await audioSource.add(audioBuffer);
+  await Promise.all(scenes.map(s=>{const im=s.image&&s.image.loaded;if(!im)return Promise.resolve();if(im.complete&&im.naturalWidth)return Promise.resolve();return new Promise((resolve,reject)=>{im.onload=()=>resolve();im.onerror=()=>reject(new Error('Gambar gagal dimuat: '+(s.image.file&&s.image.file.name||'ilustrasi')));});}));
   const totalFrames=Math.ceil(totalDuration*fps);
   for(let frame=0;frame<totalFrames;frame++){
    const t=frame/fps;
